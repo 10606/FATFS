@@ -6,11 +6,8 @@
 const uint32_t not_long_file_name = 31;
 
 const uint32_t lfnp_len = 5 + 6 + 2;
-uint32_t read_lfn_info (uint8_t * file_info, char * long_name)
+uint32_t read_lfn_info (long_file_name * lfn, char * long_name)
 {
-    long_file_name * lfn = 
-        (long_file_name *) (file_info);
-
     if (lfn->attr != 0x0f)
     {
         return not_long_file_name;
@@ -34,34 +31,37 @@ uint32_t read_lfn_info (uint8_t * file_info, char * long_name)
 
 uint32_t read_dir_lfn (file_descriptor * fd, file_descriptor * dst,  char * file_name, char * long_name)
 {
-    uint8_t buffer[max_sector_size];
     uint32_t bread;
-
+    short_file_name sfn;
+    uint32_t cur_read = 0;
     while (1)
     {   
         uint32_t ret;
-        if ((ret = f_read(fd, buffer, sizeof(short_file_name)/*max_sector_size*/, &bread)))
+        if ((ret = f_read(fd, &sfn, sizeof(short_file_name) - cur_read, &bread)))
         {
             return ret;
         }
-
-        for (uint32_t record = 0; record != bread / sizeof(short_file_name); ++record)
+        cur_read += bread;
+        if (cur_read != sizeof(short_file_name))
         {
-            uint8_t b0 = buffer[record * sizeof(short_file_name)];
-            if (b0 == 0xe5)
-            {
-                continue;
-            }
-            if (b0 == 0x00)
-            {
-                return end_of_dir;
-            }
-            
-            read_lfn_info(buffer + record * sizeof(short_file_name), long_name);
-            if (!read_file_info(buffer + record * sizeof(short_file_name), dst, file_name))
-            {
-                return 0;
-            }
+            continue;
+        }
+        cur_read = 0;
+
+        uint8_t b0 = sfn.name[0];
+        if (b0 == 0xe5)
+        {
+            continue;
+        }
+        if (b0 == 0x00)
+        {
+            return end_of_dir;
+        }
+        
+        read_lfn_info((long_file_name *)&sfn, long_name);
+        if (!read_file_info(&sfn, dst, file_name))
+        {
+            return 0;
         }
     }
 }

@@ -67,7 +67,7 @@ typedef struct short_file_name
     
     uint8_t z0; //win NT
     uint8_t ctime_10ms;
-    uint8_t ctime_time;
+    uint16_t ctime_time;
     uint16_t ctime_date;
     //UNIX time i ne vyebyvaytec'
     
