@@ -26,6 +26,7 @@ uint32_t f_read
     uint32_t * bytes_read
 )
 {
+    *bytes_read = 0;
     if (file->current_sector == 0)
     {
         *bytes_read = 0;
@@ -45,6 +46,7 @@ uint32_t f_read
         bytes = file->size - current_pointer;
         if (bytes == 0)
         {
+            *bytes_read = 0;
             return eof_file;
         }
     }
@@ -69,7 +71,7 @@ uint32_t f_read
             {
                 if (ret == eof_cluster)
                 {
-                    file->current_sector = next;
+                    file->current_sector = 0;
                     file->current_offset_in_sector = 0;
                     *bytes_read = bytes;
                     return 0;
@@ -80,6 +82,7 @@ uint32_t f_read
                     return ret;
                 }
             }
+            file->sectors_read++;
             file->current_sector = next;
             file->current_offset_in_sector = 0;
             *bytes_read = bytes;
@@ -96,13 +99,12 @@ uint32_t f_read
                 *bytes_read = 0;
                 return ret; 
             }
-            file->sectors_read++;
             uint32_t next;
             if ((ret = next_sector(file->current_sector, &next)))
             {
                 if (ret == eof_cluster)
                 {
-                    file->current_sector = next;
+                    file->current_sector = 0;
                     *bytes_read = global_info.sector_size;
                     return 0;
                 }
@@ -112,6 +114,7 @@ uint32_t f_read
                     return ret;
                 }
             }
+            file->sectors_read++;
             file->current_sector = next;
             *bytes_read = global_info.sector_size;
             return 0;
@@ -124,7 +127,6 @@ uint32_t f_read
                 *bytes_read = 0;
                 return ret; 
             }
-            file->sectors_read++;
             file->current_offset_in_sector = bytes;
             memcpy(buffer, file->buffer, bytes);
             *bytes_read = bytes;
@@ -162,7 +164,7 @@ uint32_t f_seek
             {
                 if (ret == eof_cluster)
                 {
-                    file->current_sector = next;
+                    file->current_sector = 0;
                     file->current_offset_in_sector = 0;
                     file->sectors_read = sectors_read;
                     return 0;
@@ -221,6 +223,7 @@ uint32_t f_read_all
         bytes = file->size - current_pointer;
         if (bytes == 0)
         {
+            *bytes_read = 0;
             return eof_file;
         }
     }
@@ -246,11 +249,13 @@ uint32_t f_read_all
             {
                 memcpy(file->buffer + current_offset_in_sector, old_buff, max_sector_size - current_offset_in_sector);
             }
+            *bytes_read = rb_sum;
             return ret;
         }
         rb_sum += rb;
     }
     
+    *bytes_read = rb_sum;
     return 0;
 }
 
