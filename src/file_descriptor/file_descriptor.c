@@ -32,3 +32,11 @@ char eq_file_descriptor (file_descriptor * a, file_descriptor * b)
     return a->start_sector == b->start_sector;
 }
 
+uint32_t current_position (file_descriptor * fd)
+{
+    if (fd->current_sector == 0)
+        return fd->size;
+    return (fd->sectors_read) * global_info.sector_size + 
+        fd->current_offset_in_sector;
+}
+

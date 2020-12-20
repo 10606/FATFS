@@ -159,11 +159,11 @@ uint32_t f_seek
         if (bytes >= global_info.sector_size * global_info.cluster_size)
         {
             uint32_t next, ret;
-            sectors_read += global_info.cluster_size;
             if ((ret = next_sector(current_sector + global_info.cluster_size - 1, &next)))
             {
                 if (ret == eof_cluster)
                 {
+                    sectors_read += global_info.cluster_size;
                     file->current_sector = 0;
                     file->current_offset_in_sector = 0;
                     file->sectors_read = sectors_read;
@@ -174,6 +174,7 @@ uint32_t f_seek
                     return ret;
                 }
             }
+            sectors_read += global_info.cluster_size;
             current_sector = next;
             bytes -= global_info.sector_size * global_info.cluster_size;
         }
