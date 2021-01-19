@@ -4,7 +4,6 @@
 #include "read_sector.h"
 #include "../load_FAT/load_FAT.h"
 
-#include <stdio.h>
 inline uint32_t min (uint32_t a, uint32_t b)
 {   
     if (a < b)
@@ -17,7 +16,6 @@ inline uint32_t min (uint32_t a, uint32_t b)
     }
 };
 
-//TODO check EOF
 uint32_t f_read 
 (
     file_descriptor * file, 
@@ -26,6 +24,9 @@ uint32_t f_read
     uint32_t * bytes_read
 )
 {
+    if (bytes == 0)
+        return 0;
+
     *bytes_read = 0;
     if (file->current_sector == 0)
     {
@@ -72,7 +73,7 @@ uint32_t f_read
                 if (ret == eof_cluster)
                 {
                     file->current_sector = 0;
-                    file->current_offset_in_sector = 0;
+                    file->current_offset_in_sector = file->size % global_info.sector_size;
                     *bytes_read = bytes;
                     return 0;
                 }
@@ -105,6 +106,7 @@ uint32_t f_read
                 if (ret == eof_cluster)
                 {
                     file->current_sector = 0;
+                    file->current_offset_in_sector = file->size % global_info.sector_size;
                     *bytes_read = global_info.sector_size;
                     return 0;
                 }
@@ -163,9 +165,10 @@ uint32_t f_seek
             {
                 if (ret == eof_cluster)
                 {
-                    sectors_read += global_info.cluster_size;
+                    uint32_t s_rd = file->size % (global_info.sector_size * global_info.cluster_size);
+                    sectors_read += s_rd / global_info.sector_size;
                     file->current_sector = 0;
-                    file->current_offset_in_sector = 0;
+                    file->current_offset_in_sector = s_rd % global_info.sector_size;
                     file->sectors_read = sectors_read;
                     return 0;
                 }
@@ -183,23 +186,77 @@ uint32_t f_seek
             current_sector += bytes / global_info.sector_size;
             sectors_read += bytes / global_info.sector_size;
             bytes %= global_info.sector_size;
-            //printf("sector %u", sectors_read);
             break;
         }
     }
     
     uint32_t ret;
     if ((bytes != 0) && (ret = read_sector(current_sector, file->buffer)))
-    {
         return ret; 
-    }
     file->current_sector = current_sector;
     file->current_offset_in_sector = bytes;
     file->sectors_read = sectors_read;
-    //printf("sector %u   offset %u\n", sectors_read, bytes);
-    //printf("start sector %u   current %u\n", file->start_sector, file->current_sector);
     return 0;
 }
+
+uint32_t f_read_all_fixed
+(
+    file_descriptor * file, 
+    void * buffer, 
+    uint32_t bytes, 
+    uint32_t * bytes_read
+)
+{
+
+    if (file->current_sector == 0)
+    {
+        *bytes_read = 0;
+        return eof_file;
+    }
+    
+    uint32_t current_pointer = 
+        (file->sectors_read) * global_info.sector_size + 
+        file->current_offset_in_sector;
+    if ((current_pointer + bytes > file->size) ||
+        (current_pointer + bytes < current_pointer))
+    {
+        *bytes_read = 0;
+        return eof_file;
+    }
+    
+    uint32_t current_sector = file->current_sector;
+    uint32_t current_offset_in_sector = file->current_offset_in_sector;
+    uint32_t sectors_read = file->sectors_read; 
+    char old_buff[max_sector_size];
+    if (current_offset_in_sector != 0)
+    {
+        memcpy(old_buff, file->buffer + current_offset_in_sector, global_info.sector_size - current_offset_in_sector);
+    }
+    
+    uint32_t ret, rb, rb_sum = 0;
+    while (rb_sum != bytes)
+    {
+        uint32_t cnt_try = 0;
+        while ((ret = f_read(file, (char *)buffer + rb_sum, bytes - rb_sum, &rb)) && (cnt_try < 3))
+            cnt_try++;
+        if (ret)
+        {
+            file->current_sector = current_sector;
+            file->current_offset_in_sector = current_offset_in_sector;
+            file->sectors_read = sectors_read; 
+            if (current_offset_in_sector != 0)
+            {
+                memcpy(file->buffer + current_offset_in_sector, old_buff, global_info.sector_size - current_offset_in_sector);
+            }
+            *bytes_read = 0; //rb_sum;
+            return ret;
+        }
+        rb_sum += rb;
+    }
+    *bytes_read = rb_sum;
+    return 0;
+}
+
 
 uint32_t f_read_all
 (
@@ -209,12 +266,6 @@ uint32_t f_read_all
     uint32_t * bytes_read
 )
 {
-    if (file->current_sector == 0)
-    {
-        *bytes_read = 0;
-        return eof_file;
-    }
-    
     uint32_t current_pointer = 
         (file->sectors_read) * global_info.sector_size + 
         file->current_offset_in_sector;
@@ -228,38 +279,9 @@ uint32_t f_read_all
             return eof_file;
         }
     }
-    
-    uint32_t current_sector = file->current_sector;
-    uint32_t current_offset_in_sector = file->current_offset_in_sector;
-    uint32_t sectors_read = file->sectors_read; 
-    char old_buff[max_sector_size];
-    if (current_offset_in_sector != 0)
-    {
-        memcpy(old_buff, file->buffer + current_offset_in_sector, max_sector_size - current_offset_in_sector);
-    }
-    
-    uint32_t ret, rb, rb_sum = 0;
-    while (rb_sum != bytes)
-    {
-        if ((ret = f_read(file, (char *)buffer + rb_sum, bytes - rb_sum, &rb)))
-        {
-            file->current_sector = current_sector;
-            file->current_offset_in_sector = current_offset_in_sector;
-            file->sectors_read = sectors_read; 
-            if (current_offset_in_sector != 0)
-            {
-                memcpy(file->buffer + current_offset_in_sector, old_buff, max_sector_size - current_offset_in_sector);
-            }
-            *bytes_read = rb_sum;
-            return ret;
-        }
-        rb_sum += rb;
-    }
-    
-    *bytes_read = rb_sum;
-    return 0;
+ 
+    return f_read_all_fixed(file, buffer, bytes, bytes_read);
 }
-
 
 
 

@@ -20,6 +20,14 @@ uint32_t f_read_all
     uint32_t * bytes_read
 );
 
+uint32_t f_read_all_fixed
+(
+    file_descriptor * file, 
+    void * buffer, 
+    uint32_t bytes, 
+    uint32_t * bytes_read
+);
+
 uint32_t f_seek
 (
     file_descriptor * file, 
