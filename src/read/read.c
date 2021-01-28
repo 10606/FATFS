@@ -24,16 +24,13 @@ uint32_t f_read
     uint32_t * bytes_read
 )
 {
+    *bytes_read = 0;
+    if (file->current_sector == 0)
+        return eof_file;
+    
     if (bytes == 0)
         return 0;
 
-    *bytes_read = 0;
-    if (file->current_sector == 0)
-    {
-        *bytes_read = 0;
-        return eof_file;
-    }
-    
     uint32_t current_pointer = 
         (file->sectors_read) * global_info.sector_size + 
         file->current_offset_in_sector;
@@ -149,9 +146,7 @@ uint32_t f_seek
 )
 {
     if (bytes > file->size)
-    {
         bytes = file->size;
-    }
     
     uint32_t current_sector = file->start_sector;
     uint32_t sectors_read = 0;

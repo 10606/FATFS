@@ -40,3 +40,20 @@ uint32_t current_position (file_descriptor * fd)
         fd->current_offset_in_sector;
 }
 
+void init_fake_file_descriptor (file_descriptor * fd)
+{
+    fd->size = 0;
+    fd->start_sector = 0;
+    
+    fd->current_sector = 0;
+    fd->current_offset_in_sector = 0;
+    fd->sectors_read = 0;
+    
+    fd->is_dir = 0;
+}
+
+char is_fake_file_descriptor (file_descriptor * fd)
+{
+    return (fd->start_sector == 0) && (fd->current_sector == 0);
+}
+
