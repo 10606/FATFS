@@ -3,7 +3,9 @@
 
 #include <stdint.h>
 
+#ifndef max_sector_size
 #define max_sector_size 512
+#endif
 
 typedef struct global_info_t
 {
@@ -37,7 +39,7 @@ typedef struct file_descriptor
     uint32_t sectors_read; //count of readed sectors to compare with size 
     
     char is_dir;
-    char buffer[max_sector_size]; //TODO maybe 1 static buffer in function implementation
+    char buffer[max_sector_size];
 } file_descriptor;
 
 #endif

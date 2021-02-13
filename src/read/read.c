@@ -138,7 +138,6 @@ uint32_t f_read
 
 
 
-//TODO bytes > sector_size * read_sectors ----> not need start from 0
 uint32_t f_seek
 (
     file_descriptor * file, 
@@ -148,8 +147,19 @@ uint32_t f_seek
     if (bytes > file->size)
         bytes = file->size;
     
-    uint32_t current_sector = file->start_sector;
-    uint32_t sectors_read = 0;
+    uint32_t offset_sector_in_cluster = file->current_sector & (global_info.cluster_size - 1);
+    uint32_t current_sector = file->current_sector - offset_sector_in_cluster;
+    uint32_t sectors_read = file->sectors_read - offset_sector_in_cluster;
+    
+    if (sectors_read * global_info.sector_size > bytes)
+    {
+        current_sector = file->start_sector;
+        sectors_read = 0;
+    }
+    else
+    {
+        bytes -= sectors_read * global_info.sector_size;
+    }
 
     while (bytes >= global_info.sector_size)
     {
@@ -186,7 +196,11 @@ uint32_t f_seek
     }
     
     uint32_t ret;
-    if ((bytes != 0) && (ret = read_sector(current_sector, file->buffer)))
+    uint8_t need_reread = 
+        ((file->current_sector != current_sector) ||
+        (file->current_offset_in_sector == 0)) &&
+        (bytes != 0);
+    if (need_reread && (ret = read_sector(current_sector, file->buffer)))
         return ret; 
     file->current_sector = current_sector;
     file->current_offset_in_sector = bytes;
