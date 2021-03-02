@@ -12,9 +12,7 @@ char str_n_cmp (char const * a, char const * b, uint32_t size)
     for (size_t i = 0; i != size; ++i)
     {
         if (a[i] != b[i])
-        {
             return 1;
-        }
     }
     return 0;
 }
@@ -28,6 +26,7 @@ uint32_t get_len_2 (char const * value)
 
 uint32_t open_lfn
 (
+    FAT_info_t * FAT_info, 
     file_descriptor * file,
     char const * const * long_path, //[path_len][len_i]
     char (* path)[12], //[path_len][11]
@@ -37,10 +36,11 @@ uint32_t open_lfn
     file_descriptor _dir =
     {
         max_size, 
-        global_info.root_dir, 
-        global_info.root_dir,
+        FAT_info->global_info.root_dir, 
+        FAT_info->global_info.root_dir,
         0,
         0,
+        FAT_info,
         1,
         {0}
     };
@@ -63,9 +63,8 @@ uint32_t open_lfn
         {
             uint32_t ret;
             if ((ret = read_dir_lfn(dir, next, path[i], long_name)))
-            {
                 return ret;
-            }
+
             uint32_t long_len = get_len_2(long_name);
             uint32_t path_i_len = get_len_2(long_path[i]);
             
@@ -80,9 +79,8 @@ uint32_t open_lfn
                 else
                 {
                     if (!next->is_dir)
-                    {
                         return path_consist_not_dir;
-                    }
+
                     file_descriptor * tmp = dir;
                     dir = next;
                     next = tmp;

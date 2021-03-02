@@ -19,15 +19,19 @@ typedef struct global_info_t
     uint32_t cluster_size; //in sectors (maybe need 2^ )
 } global_info_t;
 
-extern global_info_t global_info;
-
 typedef struct FAT1_t
 {
     uint32_t sector[max_sector_size / sizeof(uint32_t)];
     uint32_t current_sector;
 } FAT1_t;
 
-extern FAT1_t FAT1;
+typedef struct 
+{
+    global_info_t global_info;
+    FAT1_t FAT1;
+    uint32_t start_partition_sector;
+    uint32_t (* read_sector) (uint32_t sector_number, void * buffer);
+} FAT_info_t;
 
 typedef struct file_descriptor
 {
@@ -37,6 +41,8 @@ typedef struct file_descriptor
     uint32_t current_sector; //not readed
     uint32_t current_offset_in_sector; //not readed
     uint32_t sectors_read; //count of readed sectors to compare with size 
+    
+    FAT_info_t * FAT_info;
     
     char is_dir;
     char buffer[max_sector_size];

@@ -1,19 +1,14 @@
 #include <stdint.h>
 #include <string.h>
 #include "read.h"
-#include "read_sector.h"
 #include "../load_FAT/load_FAT.h"
 
 inline uint32_t min (uint32_t a, uint32_t b)
 {   
     if (a < b)
-    {
         return a;
-    }
     else
-    {
         return b;
-    }
 };
 
 uint32_t f_read 
@@ -32,11 +27,11 @@ uint32_t f_read
         return 0;
 
     uint32_t current_pointer = 
-        (file->sectors_read) * global_info.sector_size + 
+        (file->sectors_read) * file->FAT_info->global_info.sector_size + 
         file->current_offset_in_sector;
-    if (bytes > global_info.sector_size)
+    if (bytes > file->FAT_info->global_info.sector_size)
     {
-        bytes = global_info.sector_size;
+        bytes = file->FAT_info->global_info.sector_size;
     }
     if ((current_pointer + bytes > file->size) ||
         (current_pointer + bytes < current_pointer))
@@ -51,12 +46,12 @@ uint32_t f_read
     
     if (file->current_offset_in_sector != 0)
     {
-        if (global_info.sector_size - file->current_offset_in_sector < bytes)
+        if (file->FAT_info->global_info.sector_size - file->current_offset_in_sector < bytes)
         {
-            bytes = global_info.sector_size - file->current_offset_in_sector;
+            bytes = file->FAT_info->global_info.sector_size - file->current_offset_in_sector;
         }
         memcpy(buffer, file->buffer + file->current_offset_in_sector, bytes);
-        if (file->current_offset_in_sector + bytes < global_info.sector_size)
+        if (file->current_offset_in_sector + bytes < file->FAT_info->global_info.sector_size)
         {
             file->current_offset_in_sector += bytes;
             *bytes_read = bytes;
@@ -65,12 +60,12 @@ uint32_t f_read
         else
         {
             uint32_t next, ret;
-            if ((ret = next_sector(file->current_sector, &next)))
+            if ((ret = next_sector(file->FAT_info, file->current_sector, &next)))
             {
                 if (ret == eof_cluster)
                 {
                     file->current_sector = 0;
-                    file->current_offset_in_sector = file->size % global_info.sector_size;
+                    file->current_offset_in_sector = file->size % file->FAT_info->global_info.sector_size;
                     *bytes_read = bytes;
                     return 0;
                 }
@@ -89,22 +84,22 @@ uint32_t f_read
     }
     else
     {
-        if (bytes >= global_info.sector_size)
+        if (bytes >= file->FAT_info->global_info.sector_size)
         {
             uint32_t ret;
-            if ((ret = read_sector(file->current_sector, buffer)))
+            if ((ret = file->FAT_info->read_sector(file->current_sector, buffer)))
             {
                 *bytes_read = 0;
                 return ret; 
             }
             uint32_t next;
-            if ((ret = next_sector(file->current_sector, &next)))
+            if ((ret = next_sector(file->FAT_info, file->current_sector, &next)))
             {
                 if (ret == eof_cluster)
                 {
                     file->current_sector = 0;
-                    file->current_offset_in_sector = file->size % global_info.sector_size;
-                    *bytes_read = global_info.sector_size;
+                    file->current_offset_in_sector = file->size % file->FAT_info->global_info.sector_size;
+                    *bytes_read = file->FAT_info->global_info.sector_size;
                     return 0;
                 }
                 else
@@ -115,13 +110,13 @@ uint32_t f_read
             }
             file->sectors_read++;
             file->current_sector = next;
-            *bytes_read = global_info.sector_size;
+            *bytes_read = file->FAT_info->global_info.sector_size;
             return 0;
         }
         else
         {
             uint32_t ret;
-            if ((ret = read_sector(file->current_sector, file->buffer)))
+            if ((ret = file->FAT_info->read_sector(file->current_sector, file->buffer)))
             {
                 *bytes_read = 0;
                 return ret; 
@@ -144,36 +139,38 @@ uint32_t f_seek
     uint32_t bytes
 )
 {
+    if (file->current_sector == 0)
+        return 0;
     if (bytes > file->size)
         bytes = file->size;
     
-    uint32_t offset_sector_in_cluster = file->current_sector & (global_info.cluster_size - 1);
+    uint32_t offset_sector_in_cluster = file->current_sector & (file->FAT_info->global_info.cluster_size - 1);
     uint32_t current_sector = file->current_sector - offset_sector_in_cluster;
     uint32_t sectors_read = file->sectors_read - offset_sector_in_cluster;
     
-    if (sectors_read * global_info.sector_size > bytes)
+    if (sectors_read * file->FAT_info->global_info.sector_size > bytes)
     {
         current_sector = file->start_sector;
         sectors_read = 0;
     }
     else
     {
-        bytes -= sectors_read * global_info.sector_size;
+        bytes -= sectors_read * file->FAT_info->global_info.sector_size;
     }
 
-    while (bytes >= global_info.sector_size)
+    while (bytes >= file->FAT_info->global_info.sector_size)
     {
-        if (bytes >= global_info.sector_size * global_info.cluster_size)
+        if (bytes >= file->FAT_info->global_info.sector_size * file->FAT_info->global_info.cluster_size)
         {
             uint32_t next, ret;
-            if ((ret = next_sector(current_sector + global_info.cluster_size - 1, &next)))
+            if ((ret = next_sector(file->FAT_info, current_sector + file->FAT_info->global_info.cluster_size - 1, &next)))
             {
                 if (ret == eof_cluster)
                 {
-                    uint32_t s_rd = file->size % (global_info.sector_size * global_info.cluster_size);
-                    sectors_read += s_rd / global_info.sector_size;
+                    uint32_t s_rd = file->size % (file->FAT_info->global_info.sector_size * file->FAT_info->global_info.cluster_size);
+                    sectors_read += s_rd / file->FAT_info->global_info.sector_size;
                     file->current_sector = 0;
-                    file->current_offset_in_sector = s_rd % global_info.sector_size;
+                    file->current_offset_in_sector = s_rd % file->FAT_info->global_info.sector_size;
                     file->sectors_read = sectors_read;
                     return 0;
                 }
@@ -182,15 +179,15 @@ uint32_t f_seek
                     return ret;
                 }
             }
-            sectors_read += global_info.cluster_size;
+            sectors_read += file->FAT_info->global_info.cluster_size;
             current_sector = next;
-            bytes -= global_info.sector_size * global_info.cluster_size;
+            bytes -= file->FAT_info->global_info.sector_size * file->FAT_info->global_info.cluster_size;
         }
         else
         {
-            current_sector += bytes / global_info.sector_size;
-            sectors_read += bytes / global_info.sector_size;
-            bytes %= global_info.sector_size;
+            current_sector += bytes / file->FAT_info->global_info.sector_size;
+            sectors_read += bytes / file->FAT_info->global_info.sector_size;
+            bytes %= file->FAT_info->global_info.sector_size;
             break;
         }
     }
@@ -200,7 +197,7 @@ uint32_t f_seek
         ((file->current_sector != current_sector) ||
         (file->current_offset_in_sector == 0)) &&
         (bytes != 0);
-    if (need_reread && (ret = read_sector(current_sector, file->buffer)))
+    if (need_reread && (ret = file->FAT_info->read_sector(current_sector, file->buffer)))
         return ret; 
     file->current_sector = current_sector;
     file->current_offset_in_sector = bytes;
@@ -216,7 +213,6 @@ uint32_t f_read_all_fixed
     uint32_t * bytes_read
 )
 {
-
     if (file->current_sector == 0)
     {
         *bytes_read = 0;
@@ -224,7 +220,7 @@ uint32_t f_read_all_fixed
     }
     
     uint32_t current_pointer = 
-        (file->sectors_read) * global_info.sector_size + 
+        (file->sectors_read) * file->FAT_info->global_info.sector_size + 
         file->current_offset_in_sector;
     if ((current_pointer + bytes > file->size) ||
         (current_pointer + bytes < current_pointer))
@@ -239,7 +235,7 @@ uint32_t f_read_all_fixed
     char old_buff[max_sector_size];
     if (current_offset_in_sector != 0)
     {
-        memcpy(old_buff, file->buffer + current_offset_in_sector, global_info.sector_size - current_offset_in_sector);
+        memcpy(old_buff, file->buffer + current_offset_in_sector, file->FAT_info->global_info.sector_size - current_offset_in_sector);
     }
     
     uint32_t ret, rb, rb_sum = 0;
@@ -255,7 +251,7 @@ uint32_t f_read_all_fixed
             file->sectors_read = sectors_read; 
             if (current_offset_in_sector != 0)
             {
-                memcpy(file->buffer + current_offset_in_sector, old_buff, global_info.sector_size - current_offset_in_sector);
+                memcpy(file->buffer + current_offset_in_sector, old_buff, file->FAT_info->global_info.sector_size - current_offset_in_sector);
             }
             *bytes_read = 0; //rb_sum;
             return ret;
@@ -275,8 +271,14 @@ uint32_t f_read_all
     uint32_t * bytes_read
 )
 {
+    if (file->current_sector == 0)
+    {
+        *bytes_read = 0;
+        return eof_file;
+    }
+    
     uint32_t current_pointer = 
-        (file->sectors_read) * global_info.sector_size + 
+        (file->sectors_read) * file->FAT_info->global_info.sector_size + 
         file->current_offset_in_sector;
     if ((current_pointer + bytes > file->size) ||
         (current_pointer + bytes < current_pointer))
@@ -291,8 +293,5 @@ uint32_t f_read_all
  
     return f_read_all_fixed(file, buffer, bytes, bytes_read);
 }
-
-
-
 
 
