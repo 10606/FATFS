@@ -41,8 +41,8 @@ uint32_t open_lfn
         0,
         0,
         FAT_info,
-        1,
-        {0}
+        {0},
+        1
     };
     
     if (path_len == 0)
