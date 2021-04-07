@@ -2,7 +2,7 @@
 #include "file_descriptor.h"
 #include <string.h>
 
-void copy_file_descriptor (file_descriptor * dst, file_descriptor * src)
+void copy_file_descriptor (file_descriptor * dst, file_descriptor const * src)
 {
     dst->FAT_info = src->FAT_info;
     dst->size = src->size; //in bytes
@@ -16,7 +16,7 @@ void copy_file_descriptor (file_descriptor * dst, file_descriptor * src)
     memcpy(dst->buffer, src->buffer, max_sector_size);
 }
 
-void copy_file_descriptor_seek_0 (file_descriptor * dst, file_descriptor * src)
+void copy_file_descriptor_seek_0 (file_descriptor * dst, file_descriptor const * src)
 {
     dst->FAT_info = src->FAT_info;
     dst->size = src->size; //in bytes
@@ -29,7 +29,7 @@ void copy_file_descriptor_seek_0 (file_descriptor * dst, file_descriptor * src)
     dst->is_dir = src->is_dir;
 }
 
-char eq_file_descriptor (file_descriptor * a, file_descriptor * b)
+char eq_file_descriptor (file_descriptor const * a, file_descriptor const * b)
 {
     return (a->FAT_info == b->FAT_info) && (a->start_sector == b->start_sector);
 }

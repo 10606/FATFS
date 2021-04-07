@@ -27,10 +27,10 @@ typedef struct FAT1_t
 
 typedef struct 
 {
+    uint32_t (* read_sector) (uint32_t sector_number, void * buffer);
+    uint32_t start_partition_sector;
     global_info_t global_info;
     FAT1_t FAT1;
-    uint32_t start_partition_sector;
-    uint32_t (* read_sector) (uint32_t sector_number, void * buffer);
 } FAT_info_t;
 
 typedef struct file_descriptor
@@ -44,8 +44,8 @@ typedef struct file_descriptor
     
     FAT_info_t * FAT_info;
     
-    char is_dir;
     char buffer[max_sector_size];
+    char is_dir;
 } file_descriptor;
 
 #endif
