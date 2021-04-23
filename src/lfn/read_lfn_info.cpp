@@ -3,13 +3,16 @@
 #include "../read/read.h"
 #include <string.h>
 
-const uint32_t not_long_file_name = 31;
+namespace err
+{
+    const uint32_t not_long_file_name = 31;
+}
 
-const uint32_t lfnp_len = 5 + 6 + 2;
 uint32_t read_lfn_info (long_file_name * lfn, char * long_name)
 {
+    static const uint32_t lfnp_len = 5 + 6 + 2;
     if (lfn->attr != 0x0f)
-        return not_long_file_name;
+        return err::not_long_file_name;
     
     uint32_t offset = lfn->fragment_index - ((lfn->fragment_index > 0x40)? 0x40 : 0);
     offset = (offset - 1) * lfnp_len * 2;
@@ -52,7 +55,7 @@ uint32_t read_dir_lfn
         if (b0 == 0xe5)
             continue;
         if (b0 == 0x00)
-            return end_of_dir;
+            return err::end_of_dir;
         
         read_lfn_info((long_file_name *)&sfn, long_name);
         if (!read_file_info(fd->FAT_info, &sfn, dst, file_name))

@@ -3,11 +3,13 @@
 #include <string.h>
 #include "../read/read.h"
 #include "../structures/structure.h"
-#include "../structures/structure_.h"
+#include "../file_descriptor/file_descriptor.h"
 
-const uint32_t max_size = 0xfffffff0;
-const uint32_t end_of_dir = 21;
-const uint32_t not_short_file_name = 22;
+namespace err
+{
+    const uint32_t end_of_dir = 21;
+    const uint32_t not_short_file_name = 22;
+}
 
 uint32_t read_file_info 
 (
@@ -18,7 +20,7 @@ uint32_t read_file_info
 )
 {
     if ((sfn->attr & 0x0f) == 0x0f)
-        return not_short_file_name;
+        return err::not_short_file_name;
 
     fd->FAT_info = FAT_info;
     fd->size = sfn->file_size;
@@ -36,7 +38,7 @@ uint32_t read_file_info
     file_name[11] = 0;
 
     if (fd->is_dir)
-        fd->size = max_size;
+        fd->size = file_descriptor::max_size;
     
     return 0;
 }
@@ -65,7 +67,7 @@ uint32_t read_dir
         if (b0 == 0xe5)
             continue;
         if (b0 == 0x00)
-            return end_of_dir;
+            return err::end_of_dir;
         
         if (!read_file_info(fd->FAT_info, &sfn, dst, file_name))
             return 0;

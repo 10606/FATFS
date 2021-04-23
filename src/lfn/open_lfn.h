@@ -3,10 +3,14 @@
 
 #include <stdint.h>
 #include "../structures/structure.h"
-#include "../structures/structure_.h"
+#include "../file_descriptor/file_descriptor.h"
 
-extern uint32_t const not_found;
-extern uint32_t const path_consist_not_dir;
+namespace err
+{
+    extern uint32_t const not_found;
+    extern uint32_t const path_consist_not_dir;
+    extern uint32_t const not_long_file_name;
+}
 
 uint32_t open_lfn
 (

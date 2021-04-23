@@ -2,8 +2,13 @@
 
 #include "../read_file_info/read_file_info.h"
 #include <string.h>
-uint32_t const not_found = 11;
-uint32_t const path_consist_not_dir = 12;
+#include <algorithm>
+
+namespace err
+{
+    uint32_t const not_found = 11;
+    uint32_t const path_consist_not_dir = 12;
+}
 
 uint32_t open 
 (
@@ -13,17 +18,7 @@ uint32_t open
     uint32_t path_len
 )
 {
-    file_descriptor _dir =
-    {
-        max_size, 
-        FAT_info->global_info.root_dir, 
-        FAT_info->global_info.root_dir,
-        0,
-        0,
-        FAT_info,
-        {0},
-        1
-    };
+    file_descriptor _dir(FAT_info);
     
     if (path_len == 0)
     {
@@ -57,17 +52,15 @@ uint32_t open
                 {
                     if (!next->is_dir)
                     {
-                        return path_consist_not_dir;
+                        return err::path_consist_not_dir;
                     }
-                    file_descriptor * tmp = dir;
-                    dir = next;
-                    next = tmp;
+                    std::swap(dir, next);
                     break;
                 }
             }
         }
     }
     
-    return not_found;
+    return err::not_found;
 }
 

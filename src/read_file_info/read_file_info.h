@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include "../structures/structure.h"
-#include "../structures/structure_.h"
+#include "../file_descriptor/file_descriptor.h"
 
 uint32_t read_dir 
 (
@@ -20,9 +20,11 @@ uint32_t read_file_info
     char * file_name
 );
 
-extern const uint32_t max_size;
-extern const uint32_t end_of_dir;
-extern const uint32_t not_short_file_name;
+namespace err
+{
+    extern const uint32_t end_of_dir;
+    extern const uint32_t not_short_file_name;
+};
 
 #endif
 

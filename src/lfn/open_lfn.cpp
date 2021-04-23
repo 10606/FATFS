@@ -3,9 +3,13 @@
 #include "read_lfn_info.h"
 #include "../read_file_info/read_file_info.h"
 #include <string.h>
+#include <algorithm>
 
-uint32_t const not_found = 41;
-uint32_t const path_consist_not_dir = 42;
+namespace err
+{
+    uint32_t const not_found = 41;
+    uint32_t const path_consist_not_dir = 42;
+}
 
 char str_n_cmp (char const * a, char const * b, uint32_t size)
 {
@@ -33,17 +37,7 @@ uint32_t open_lfn
     uint32_t path_len
 )
 {
-    file_descriptor _dir =
-    {
-        max_size, 
-        FAT_info->global_info.root_dir, 
-        FAT_info->global_info.root_dir,
-        0,
-        0,
-        FAT_info,
-        {0},
-        1
-    };
+    file_descriptor _dir(FAT_info);
     
     if (path_len == 0)
     {
@@ -79,18 +73,15 @@ uint32_t open_lfn
                 else
                 {
                     if (!next->is_dir)
-                        return path_consist_not_dir;
-
-                    file_descriptor * tmp = dir;
-                    dir = next;
-                    next = tmp;
+                        return err::path_consist_not_dir;
+                    std::swap(next, dir);
                     break;
                 }
             }
         }
     }
     
-    return not_found;
+    return err::not_found;
 }
 
 

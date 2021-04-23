@@ -1,10 +1,16 @@
 #ifndef OPEN_H
 #define OPEN_H
 
-#include "../structures/structure_.h"
+#include "../fat_info/fat_info.h"
+#include "../file_descriptor/file_descriptor.h"
 
-extern uint32_t const not_found;
-extern uint32_t const path_consist_not_dir;
+#include <stdint.h>
+
+namespace err
+{
+    extern uint32_t const not_found;
+    extern uint32_t const path_consist_not_dir;
+}
 
 uint32_t open 
 (

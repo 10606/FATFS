@@ -3,9 +3,8 @@
 
 #include <stdint.h>
 #include "../structures/structure.h"
-#include "../structures/structure_.h"
+#include "../file_descriptor/file_descriptor.h"
 
-extern const uint32_t not_long_file_name;
 uint32_t read_lfn_info (long_file_name * lfn, char * long_name);
 uint32_t read_dir_lfn 
 (
