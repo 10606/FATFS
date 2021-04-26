@@ -1,7 +1,6 @@
 #include "read_file_info.h"
 
 #include <string.h>
-#include "../read/read.h"
 #include "../structures/structure.h"
 #include "../file_descriptor/file_descriptor.h"
 
@@ -56,7 +55,7 @@ uint32_t read_dir
     while (1)
     {   
         uint32_t ret;
-        if ((ret = f_read(fd, &sfn, sizeof(short_file_name) - cur_read, &bread)))
+        if ((ret = fd->read(&sfn, sizeof(short_file_name) - cur_read, &bread)))
             return ret;
         cur_read += bread;
         if (cur_read != sizeof(short_file_name))

@@ -2,6 +2,7 @@
 #define FILE_DESCRIPTOR_H
 
 #include "../fat_info/fat_info.h"
+#include <utility>
 #include <cstring>
 
 struct file_descriptor
@@ -33,31 +34,17 @@ struct file_descriptor
         is_dir(1)
     {}
     
-    file_descriptor (file_descriptor const & other)
-    {
-        copy(other);
-    }
-
-    void copy (file_descriptor const & other)
-    {
-        FAT_info = other.FAT_info;
-        size = other.size; //in bytes
-        start_sector = other.start_sector;
-
-        current_sector = other.current_sector; //not readed
-        current_offset_in_sector = other.current_offset_in_sector; //not readed
-        sectors_read = other.sectors_read; //count of readed sectors to compare with size
-
-        is_dir = other.is_dir;
-        memcpy(buffer, other.buffer, max_sector_size);
-    }
+    constexpr file_descriptor (file_descriptor const & other) = default;
+    constexpr file_descriptor & operator = (file_descriptor const & other) = default;
+    constexpr file_descriptor (file_descriptor && other) = default;
+    constexpr file_descriptor & operator = (file_descriptor && other) = default;
 
     file_descriptor (file_descriptor const & other, int)
     {
         copy_seek_0(other);
     }
 
-    constexpr void copy_seek_0 (file_descriptor const & other)
+    constexpr void copy_seek_0 (file_descriptor const & other) noexcept
     {
         FAT_info = other.FAT_info;
         size = other.size; //in bytes
@@ -70,12 +57,12 @@ struct file_descriptor
         is_dir = other.is_dir;
     }
 
-    constexpr bool operator == (file_descriptor const & rhs)
+    constexpr bool operator == (file_descriptor const & rhs) const noexcept
     {
         return (FAT_info == rhs.FAT_info) && (start_sector == rhs.start_sector);
     }
 
-    constexpr uint32_t current_position ()
+    constexpr uint32_t current_position () const noexcept
     {
         if (start_sector == 0)
             return 0;
@@ -85,8 +72,30 @@ struct file_descriptor
             current_offset_in_sector;
     }
 
-    constexpr void init_fake ()
+    // constexpr only in c++20, but i get many warnings from CMSIS 
+    //  with deprecated |= for volatile
+    /*constexpr*/ void swap (file_descriptor & other) noexcept
     {
+        std::swap(size, other.size);
+        std::swap(start_sector, other.start_sector);
+        
+        std::swap(current_sector, other.current_sector);
+        std::swap(current_offset_in_sector, other.current_offset_in_sector);
+        std::swap(sectors_read, other.sectors_read);
+     
+        std::swap(FAT_info, other.FAT_info);
+        std::swap(buffer, other.buffer);
+        std::swap(is_dir, other.is_dir);
+    }
+
+    constexpr void init_fake () noexcept
+    {
+        // c++20 way, i want constexpr
+        /*
+        file_descriptor fake;
+        swap(fake);
+        */
+    
         size = 0;
         start_sector = 0;
         
@@ -98,11 +107,16 @@ struct file_descriptor
         is_dir = 0;
     }
 
-    constexpr bool is_fake ()
+    constexpr bool is_fake () const noexcept
     {
         return (start_sector == 0) && (current_sector == 0);
     }
     
+    uint32_t read (void * buff, uint32_t bytes, uint32_t * bytes_read);
+    uint32_t read_all (void * buff, uint32_t bytes, uint32_t * bytes_read);
+    uint32_t read_all_fixed (void * buff, uint32_t bytes);
+    uint32_t seek (uint32_t bytes);
+
     
 
     uint32_t size; //in bytes
@@ -119,6 +133,12 @@ struct file_descriptor
     
     
     static constexpr uint32_t max_size = 0xfffffff0;
+    
+private:
+    
+    uint32_t read_next_sector (uint32_t bytes, uint32_t * bytes_read);
+    bool too_many_for_read (uint32_t bytes);
+    uint32_t read_all_common (void * buff, uint32_t bytes, uint32_t * bytes_read);
 };
 
 #endif

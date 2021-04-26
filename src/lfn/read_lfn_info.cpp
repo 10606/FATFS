@@ -1,6 +1,6 @@
 #include "read_lfn_info.h"
 #include "../read_file_info/read_file_info.h"
-#include "../read/read.h"
+#include "../file_descriptor/file_descriptor.h"
 #include <string.h>
 
 namespace err
@@ -44,7 +44,7 @@ uint32_t read_dir_lfn
     while (1)
     {   
         uint32_t ret;
-        if ((ret = f_read(fd, &sfn, sizeof(short_file_name) - cur_read, &bread)))
+        if ((ret = fd->read(&sfn, sizeof(short_file_name) - cur_read, &bread)))
             return ret;
         cur_read += bread;
         if (cur_read != sizeof(short_file_name))

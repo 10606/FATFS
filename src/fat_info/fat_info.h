@@ -47,11 +47,17 @@ struct FAT_info_t
         FAT1.current_sector = 0;
     }
 
+    FAT_info_t (FAT_info_t const &) = delete;
+    FAT_info_t (FAT_info_t &&) = delete;
+    FAT_info_t & operator = (FAT_info_t const &) = delete;
+    FAT_info_t & operator = (FAT_info_t &&) = delete;
+
     uint32_t init ();
     uint32_t next_sector (uint32_t sector, uint32_t & answer);
     uint32_t load_FAT (uint32_t sector, uint32_t & answer);
 
-    
+    friend struct file_descriptor;
+
     uint32_t (* read_sector) (uint32_t sector_number, void * buffer);
     uint32_t start_partition_sector;
     global_info_t global_info;
