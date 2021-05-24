@@ -11,7 +11,7 @@ namespace err
     uint32_t const path_consist_not_dir = 42;
 }
 
-char str_n_cmp (char const * a, char const * b, uint32_t size)
+char str_n_cmp (uint16_t const * a, uint16_t const * b, uint32_t size)
 {
     for (size_t i = 0; i != size; ++i)
     {
@@ -21,10 +21,10 @@ char str_n_cmp (char const * a, char const * b, uint32_t size)
     return 0;
 }
 
-uint32_t get_len_2 (char const * value)
+uint32_t get_len_2 (uint16_t const * value)
 {
     uint32_t answer = 0;
-    for (; value[answer] != 0 || value[answer + 1] != 0; answer += 2);
+    for (; value[answer] != 0; answer++);
     return answer;
 }
 
@@ -32,8 +32,8 @@ uint32_t open_lfn
 (
     FAT_info_t * FAT_info, 
     file_descriptor * file,
-    char const * const * long_path, //[path_len][len_i]
-    char (* path)[12], //[path_len][11]
+    uint16_t const * const * long_path, //[path_len][len_i]
+    char (* path)[12], //[path_len][12]
     uint32_t path_len
 )
 {
@@ -49,7 +49,7 @@ uint32_t open_lfn
 
     file_descriptor * dir = &_dir;
     file_descriptor * next = &_next;
-    char long_name[(256 + 13) * 2];
+    uint16_t long_name[256 + 13];
     
     for (uint32_t i = 0; i != path_len; ++i)
     {

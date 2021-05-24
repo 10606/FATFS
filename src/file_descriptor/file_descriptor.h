@@ -39,10 +39,18 @@ struct file_descriptor
     constexpr file_descriptor (file_descriptor && other) = default;
     constexpr file_descriptor & operator = (file_descriptor && other) = default;
 
-    file_descriptor (file_descriptor const & other, int)
-    {
-        copy_seek_0(other);
-    }
+    constexpr file_descriptor (file_descriptor const & other, int) : // copy & seek 0
+        size(other.size),
+        start_sector(other.start_sector),
+
+        current_sector(start_sector),
+        current_offset_in_sector(0),
+        sectors_read(0),
+
+        FAT_info(other.FAT_info),
+        buffer{},
+        is_dir(other.is_dir)
+    {}
 
     constexpr void copy_seek_0 (file_descriptor const & other) noexcept
     {
@@ -90,12 +98,6 @@ struct file_descriptor
 
     constexpr void init_fake () noexcept
     {
-        // c++20 way, i want constexpr
-        /*
-        file_descriptor fake;
-        swap(fake);
-        */
-    
         size = 0;
         start_sector = 0;
         

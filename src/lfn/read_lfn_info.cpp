@@ -8,24 +8,21 @@ namespace err
     const uint32_t not_long_file_name = 31;
 }
 
-uint32_t read_lfn_info (long_file_name * lfn, char * long_name)
+uint32_t read_lfn_info (long_file_name * lfn, uint16_t * long_name)
 {
     static const uint32_t lfnp_len = 5 + 6 + 2;
     if (lfn->attr != 0x0f)
         return err::not_long_file_name;
     
     uint32_t offset = lfn->fragment_index - ((lfn->fragment_index > 0x40)? 0x40 : 0);
-    offset = (offset - 1) * lfnp_len * 2;
+    offset = (offset - 1) * lfnp_len;
     
-    memcpy(long_name + offset,              lfn->name_0_4, 5*2);
-    memcpy(long_name + offset + 5*2,        lfn->name_5_10, 6*2);
-    memcpy(long_name + offset + 5*2 + 6*2,  lfn->name_11_12, 2*2);
+    memcpy(long_name + offset,          lfn->name_0_4, 5*2);
+    memcpy(long_name + offset + 5,      lfn->name_5_10, 6*2);
+    memcpy(long_name + offset + 5 + 6,  lfn->name_11_12, 2*2);
     
     if (lfn->fragment_index > 0x40)
-    {
-        long_name[offset + lfnp_len * 2    ] = 0;
-        long_name[offset + lfnp_len * 2 + 1] = 0;
-    }
+        long_name[offset + lfnp_len] = 0;
     
     return 0;
 }
@@ -35,7 +32,7 @@ uint32_t read_dir_lfn
     file_descriptor * fd, 
     file_descriptor * dst,  
     char * file_name, 
-    char * long_name
+    uint16_t * long_name
 )
 {
     uint32_t bread;
