@@ -14,10 +14,16 @@ namespace err
 char str_n_cmp (uint16_t const * a, uint16_t const * b, uint32_t size)
 {
     for (size_t i = 0; i != size; ++i)
-    {
         if (a[i] != b[i])
             return 1;
-    }
+    return 0;
+}
+
+char str_n_cmp (uint16_t const * a, char const * b, uint32_t size)
+{
+    for (size_t i = 0; i != size; ++i)
+        if (a[i] != static_cast <uint8_t> (b[i]))
+            return 1;
     return 0;
 }
 
@@ -62,8 +68,11 @@ uint32_t open_lfn
             uint32_t long_len = get_len_2(long_name);
             uint32_t path_i_len = get_len_2(long_path[i]);
             
-            if ((long_len == path_i_len) &&
-                (str_n_cmp(long_name, long_path[i], long_len) == 0))
+            if (((long_len == path_i_len) &&
+                 (str_n_cmp(long_path[i], long_name, path_i_len) == 0)) ||
+                ((path_i_len < 12) && // blyatskiy FAT32 can not have lnf record
+                 (str_n_cmp(long_path[i], path[i], path_i_len) == 0) &&
+                 (strncmp(path[i] + path_i_len, "            ", 11 - path_i_len) == 0)))
             {
                 if (i + 1 == path_len)
                 {
