@@ -39,7 +39,7 @@ uint32_t open_lfn
     FAT_info_t * FAT_info, 
     file_descriptor * file,
     uint16_t const * const * long_path, //[path_len][len_i]
-    char (* path)[12], //[path_len][12]
+    filename_t * path, //[path_len]
     uint32_t path_len
 )
 {

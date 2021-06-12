@@ -14,7 +14,7 @@ uint32_t open
 (
     FAT_info_t * FAT_info, 
     file_descriptor * file,
-    char const (* const path)[12], //[path_len][11]
+    filename_t const * path, //[path_len]
     uint32_t path_len
 )
 {
@@ -30,7 +30,7 @@ uint32_t open
 
     file_descriptor * dir = &_dir;
     file_descriptor * next = &_next;
-    char name[12];
+    filename_t name;
     
     for (uint32_t i = 0; i != path_len; ++i)
     {
@@ -52,7 +52,7 @@ uint32_t open
                 {
                     if (!next->is_dir)
                     {
-                        return err::path_consist_not_dir;
+                        return err::not_found; // err::path_consist_not_dir;
                     }
                     std::swap(dir, next);
                     break;

@@ -5,6 +5,8 @@
 #include <utility>
 #include <cstring>
 
+typedef char filename_t[12];
+
 struct file_descriptor
 {
     constexpr file_descriptor () :
