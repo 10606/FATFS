@@ -84,7 +84,7 @@ struct file_descriptor
 
     // constexpr only in c++20, but i get many warnings from CMSIS 
     //  with deprecated |= for volatile
-    /*constexpr*/ void swap (file_descriptor & other) noexcept
+    constexpr void swap (file_descriptor & other) noexcept
     {
         std::swap(size, other.size);
         std::swap(start_sector, other.start_sector);

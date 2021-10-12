@@ -39,6 +39,9 @@ uint32_t open
             uint32_t ret;
             if ((ret = read_dir(dir, next, name)))
             {
+                if ((ret == err::end_of_dir) ||
+                    (ret == err::eof_file))
+                    return err::not_found;
                 return ret;
             }
             if (!strncmp(name, path[i], 11))
