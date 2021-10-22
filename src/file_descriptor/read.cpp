@@ -182,9 +182,18 @@ uint32_t file_descriptor::read_all_common
     uint32_t * bytes_read
 )
 {
+    if ((current_offset_in_sector != 0) &&
+        (FAT_info->global_info.sector_size - current_offset_in_sector > bytes))
+    {
+        *bytes_read = bytes;
+        memcpy(buff, buffer + current_offset_in_sector, bytes);
+        current_offset_in_sector += bytes;
+        return 0;
+    }
+    
     uint32_t old_current_sector = current_sector;
     uint32_t old_current_offset_in_sector = current_offset_in_sector;
-    uint32_t old_sectors_read = sectors_read; 
+    uint32_t old_sectors_read = sectors_read;
     char old_buff[max_sector_size];
     if (old_current_offset_in_sector != 0)
         memcpy(old_buff, buffer + old_current_offset_in_sector, FAT_info->global_info.sector_size - old_current_offset_in_sector);
