@@ -194,23 +194,19 @@ uint32_t file_descriptor::read_all_common
     uint32_t old_current_sector = current_sector;
     uint32_t old_current_offset_in_sector = current_offset_in_sector;
     uint32_t old_sectors_read = sectors_read;
-    char old_buff[max_sector_size];
-    if (old_current_offset_in_sector != 0)
-        memcpy(old_buff, buffer + old_current_offset_in_sector, FAT_info->global_info.sector_size - old_current_offset_in_sector);
     
     uint32_t ret, rb, rb_sum = 0;
     while (rb_sum != bytes)
     {
-        uint32_t cnt_try = 0;
-        while ((ret = read((char *)buff + rb_sum, bytes - rb_sum, &rb)) && (cnt_try < 3))
-            cnt_try++;
+        for (uint32_t cnt_try = 0; 
+             ret = read((char *)buff + rb_sum, bytes - rb_sum, &rb), (ret && cnt_try < 3); 
+             cnt_try++);
+
         if (ret) [[unlikely]] 
         {
             current_sector = old_current_sector;
             current_offset_in_sector = old_current_offset_in_sector;
             sectors_read = old_sectors_read; 
-            if (old_current_offset_in_sector != 0)
-                memcpy(buffer + old_current_offset_in_sector, old_buff, FAT_info->global_info.sector_size - old_current_offset_in_sector);
             *bytes_read = 0; //rb_sum;
             return ret;
         }
